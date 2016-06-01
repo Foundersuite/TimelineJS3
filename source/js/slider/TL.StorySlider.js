@@ -111,15 +111,14 @@ TL.StorySlider = TL.Class.extend({
 
 	/* Slides
 	================================================== */
-	_addSlide:function(slide) {
-		slide.addTo(this._el.slider_item_container);
+	_addSlide:function(slide, asFirst) {
+		slide.addTo(this._el.slider_item_container, asFirst);
 		slide.on('added', this._onSlideAdded, this);
 		slide.on('background_change', this._onBackgroundChange, this);
 	},
 
 	_createSlide: function(d, title_slide, n) {
 		var slide = new TL.Slide(d, this.options, title_slide);
-		this._addSlide(slide);
 		if(n < 0) {
 		    this._slides.push(slide);
 		} else {
@@ -186,6 +185,7 @@ TL.StorySlider = TL.Class.extend({
 	goTo: function(n, fast, displayupdate) {
 		n = parseInt(n);
 		if (isNaN(n)) n = 0;
+		if (n >= this._slides.length || n < 0) return;
 
 		var self = this;
 
@@ -196,56 +196,74 @@ TL.StorySlider = TL.Class.extend({
 			clearTimeout(this.preloadTimer);
 		}
 
+		var itemContainer = this._el.slider_item_container;
+
+		var asFirst = n < this.currentIdx;
+
+		var element = asFirst ? itemContainer.firstChild : itemContainer.lastChild;
+
+		// Stop animation
+		if (this.animator) {
+			this.animator.stop();
+			if (itemContainer.childNodes.length > 2) {
+				itemContainer.removeChild(element);
+				element = asFirst ? itemContainer.firstChild : itemContainer.lastChild;
+			}
+		}
+		if (this._swipable) {
+			this._swipable.stopMomentum();
+		}
+
+		var direction = (1 - (asFirst * 2)) * !!element;
+
+		var lastItemOffsetLeft = ((element || {}).offsetLeft || 0);
+
+		var left = lastItemOffsetLeft + this.slide_spacing * direction;
+
+		this._addSlide(this._slides[n], asFirst);
+		this._slides[n].setPosition({left: left, top:0});
+
+		if (this.currentSlide)
+			this.currentSlide.setActive(false);
+
+		this.currentSlide = this._slides[n];
+		this.currentIdx = n;
+
+		this.current_id = this.currentSlide.data.unique_id;
+
+		if (fast) {
+			this._el.slider_container.style.left = -left + "px";
+			this._onSlideChange(displayupdate)();
+		} else {
+			this.animator = TL.Animate(this._el.slider_container, {
+				left: 		-left + "px",
+				duration: 	this.options.duration,
+				easing: 	this.options.ease,
+				complete: 	this._onSlideChange(displayupdate)
+			});
+		}
+
 		// Set Slide Active State
-		for (var i = 0; i < this._slides.length; i++) {
-			this._slides[i].setActive(false);
+		this.currentSlide.setActive(true);
+
+		// Update Navigation and Info
+		if (this._slides[n + 1]) {
+			this.showNav(this._nav.next, true);
+			this._nav.next.update(this._slides[n + 1]);
+		} else {
+			this.showNav(this._nav.next, false);
+		}
+		if (this._slides[n - 1]) {
+			this.showNav(this._nav.previous, true);
+			this._nav.previous.update(this._slides[n - 1]);
+		} else {
+			this.showNav(this._nav.previous, false);
 		}
 
-		if (n < this._slides.length && n >= 0) {
-			this.current_id = this._slides[n].data.unique_id;
-
-			// Stop animation
-			if (this.animator) {
-				this.animator.stop();
-			}
-			if (this._swipable) {
-				this._swipable.stopMomentum();
-			}
-
-			if (fast) {
-				this._el.slider_container.style.left = -(this.slide_spacing * n) + "px";
-				this._onSlideChange(displayupdate);
-			} else {
-				this.animator = TL.Animate(this._el.slider_container, {
-					left: 		-(this.slide_spacing * n) + "px",
-					duration: 	this.options.duration,
-					easing: 	this.options.ease,
-					complete: 	this._onSlideChange(displayupdate)
-				});
-			}
-
-			// Set Slide Active State
-			this._slides[n].setActive(true);
-
-			// Update Navigation and Info
-			if (this._slides[n + 1]) {
-				this.showNav(this._nav.next, true);
-				this._nav.next.update(this._slides[n + 1]);
-			} else {
-				this.showNav(this._nav.next, false);
-			}
-			if (this._slides[n - 1]) {
-				this.showNav(this._nav.previous, true);
-				this._nav.previous.update(this._slides[n - 1]);
-			} else {
-				this.showNav(this._nav.previous, false);
-			}
-
-			// Preload Slides
-			this.preloadTimer = setTimeout(function() {
-				self.preloadSlides(n);
-			}, this.options.duration);
-		}
+		// Preload Slides
+		this.preloadTimer = setTimeout(function() {
+			self.preloadSlides(n);
+		}, this.options.duration);
 	},
 
 	goToId: function(id, fast, displayupdate) {
@@ -378,8 +396,6 @@ TL.StorySlider = TL.Class.extend({
 		// Position slides
 		for (var i = 0; i < this._slides.length; i++) {
 			this._slides[i].updateDisplay(this.options.width, this.options.height, _layout);
-			this._slides[i].setPosition({left:(this.slide_spacing * i), top:0});
-
 		};
 
 		// Go to the current slide
@@ -510,6 +526,25 @@ TL.StorySlider = TL.Class.extend({
 	_onSlideChange: function(displayupdate) {
 		if (!displayupdate) {
 			this.fire("change", {unique_id: this.current_id});
+		}
+		return this._onSlideChangeFinish.bind(this);
+	},
+
+	_onSlideChangeFinish: function() {
+		var container = this._el.slider_item_container;
+		var element = this.currentSlide._el.container;
+		this._removeOtherElements(container, element);
+		// Adjust position
+		this.currentSlide.setPosition({left:0, top:0});
+		this._el.slider_container.style.left = "0px";
+	},
+
+	_removeOtherElements: function(container, element) {
+		while (container.childNodes.length > 1) {
+			var child = container.lastChild;
+			if (child.isSameNode(element))
+				child = container.firstChild;
+		    container.removeChild(child);
 		}
 	},
 
