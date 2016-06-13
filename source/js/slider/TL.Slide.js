@@ -113,8 +113,12 @@ TL.Slide = TL.Class.extend({
 		}
 	},
 
-	addTo: function(container) {
-		container.appendChild(this._el.container);
+	addTo: function(container, asFirst) {
+		if (asFirst) {
+			container.insertBefore(this._el.container, container.firstChild);
+		} else {
+ 			container.appendChild(this._el.container);
+ 		}
 		//this.onAdd();
 	},
 
