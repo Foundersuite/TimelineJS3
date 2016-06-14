@@ -107,6 +107,11 @@ TL.TimeNav = TL.Class.extend({
 		this._onLoaded();
 	},
 
+	destroy: function () {
+		this._destroyEvents();
+		this._destroyLayout();
+	},
+
 	/*	Public
 	================================================== */
 	positionMarkers: function() {
@@ -682,6 +687,12 @@ TL.TimeNav = TL.Class.extend({
 
 	},
 
+	_destroyLayout: function () {
+		this._swipable.stopMomentum();
+		this._swipable.disable();
+		this.timeaxis.destroy();
+	},
+
 	_initEvents: function () {
 		// Drag Events
 		this._swipable.on('dragmove', this._onDragMove, this);
@@ -689,6 +700,15 @@ TL.TimeNav = TL.Class.extend({
 		// Scroll Events
 		TL.DomEvent.addListener(this._el.container, 'mousewheel', this._onMouseScroll, this);
 		TL.DomEvent.addListener(this._el.container, 'DOMMouseScroll', this._onMouseScroll, this);
+	},
+
+	_destroyEvents: function () {
+		// Drag Events
+		this._swipable.off('dragmove', this._onDragMove);
+
+		// Scroll Events
+		TL.DomEvent.removeListener(this._el.container, 'mousewheel', this._onMouseScroll);
+		TL.DomEvent.removeListener(this._el.container, 'DOMMouseScroll', this._onMouseScroll);
 	},
 
 	_initData: function() {

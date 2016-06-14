@@ -88,6 +88,11 @@ TL.TimeAxis = TL.Class.extend({
 
 	},
 
+	destroy: function () {
+		this._destroyEvents();
+		this._destroyLayout();
+	},
+
 	/*	Adding, Hiding, Showing etc
 	================================================== */
 	show: function() {
@@ -263,7 +268,15 @@ TL.TimeAxis = TL.Class.extend({
 		this.onLoaded();
 	},
 
+	_destroyLayout: function() {
+
+	},
+
 	_initEvents: function() {
+
+	},
+
+	_destroyEvents: function() {
 
 	},
 

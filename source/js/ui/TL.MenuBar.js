@@ -55,6 +55,11 @@ TL.MenuBar = TL.Class.extend({
 		this._initEvents();
 	},
 
+	destroy: function () {
+		this._destroyEvents();
+		this._destroyLayout();
+	},
+
 	/*	Public
 	================================================== */
 	show: function(d) {
@@ -154,10 +159,20 @@ TL.MenuBar = TL.Class.extend({
 
 	},
 
+	_destroyLayout: function () {
+
+	},
+
 	_initEvents: function () {
 		TL.DomEvent.addListener(this._el.button_backtostart, 'click', this._onButtonBackToStart, this);
 		TL.DomEvent.addListener(this._el.button_zoomin, 'click', this._onButtonZoomIn, this);
 		TL.DomEvent.addListener(this._el.button_zoomout, 'click', this._onButtonZoomOut, this);
+	},
+
+	_destroyEvents: function () {
+		TL.DomEvent.removeListener(this._el.button_backtostart, 'click', this._onButtonBackToStart);
+		TL.DomEvent.removeListener(this._el.button_zoomin, 'click', this._onButtonZoomIn);
+		TL.DomEvent.removeListener(this._el.button_zoomout, 'click', this._onButtonZoomOut);	
 	},
 
 	// Update Display

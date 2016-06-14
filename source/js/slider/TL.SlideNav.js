@@ -76,6 +76,13 @@ TL.SlideNav = TL.Class.extend({
 
 		this._update(d);
 	},
+
+	/*	Destroy
+	================================================== */
+	destroy: function () {
+		this._destroyEvents();
+		this._destroyLayout();
+	},
 	
 	/*	Color
 	================================================== */
@@ -118,10 +125,17 @@ TL.SlideNav = TL.Class.extend({
 		
 		this._update();
 	},
+
+	_destroyLayout: function () {
+		
+	},
 	
 	_initEvents: function () {
 		TL.DomEvent.addListener(this._el.container, 'click', this._onMouseClick, this);
+	},
+
+	_destroyEvents: function () {
+		TL.DomEvent.removeListener(this._el.container, 'click', this._onMouseClick);	
 	}
-	
 	
 });
