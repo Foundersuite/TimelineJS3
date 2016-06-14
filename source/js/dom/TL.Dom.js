@@ -23,6 +23,12 @@ TL.Dom = {
 		return el;
 	},
 
+	remove: function(elem) {
+		if (elem.parentNode) {
+			elem.parentNode.removeChild(elem);
+		}
+	},
+
 	createText: function(content, container) {
 		var el = document.createTextNode(content);
 		if (container) {

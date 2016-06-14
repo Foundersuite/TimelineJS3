@@ -123,7 +123,9 @@ TL.Slide = TL.Class.extend({
 	},
 
 	removeFrom: function(container) {
-		container.removeChild(this._el.container);
+		if (this._el.container.parentNode == container) {
+			container.removeChild(this._el.container);
+		}
 	},
 
 	updateDisplay: function(w, h, l) {

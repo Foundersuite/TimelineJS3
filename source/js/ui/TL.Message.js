@@ -47,6 +47,11 @@ TL.Message = TL.Class.extend({
 		this._initLayout();
 		this._initEvents();
 	},
+
+	destroy: function () {
+		this._destroyEvents();
+		this._destroyLayout();
+	},
 	
 	/*	Public
 	================================================== */
@@ -101,10 +106,19 @@ TL.Message = TL.Class.extend({
 		this._updateMessage();
 		
 	},
+
+	_destroyLayout: function () {
+
+	},
 	
 	_initEvents: function () {
 		TL.DomEvent.addListener(this._el.container, 'click', this._onMouseClick, this);
 		TL.DomEvent.addListener(this, 'removed', this._onRemove, this);
+	},
+	
+	_destroyEvents: function () {
+		TL.DomEvent.removeListener(this._el.container, 'click', this._onMouseClick, this);
+		TL.DomEvent.removeListener(this, 'removed', this._onRemove, this);
 	},
 	
 	// Update Display

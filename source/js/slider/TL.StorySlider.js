@@ -146,6 +146,12 @@ TL.StorySlider = TL.Class.extend({
 		this._slides.splice(n, 1);
 	},
 
+	_destroySlides: function() {
+		while (this._slides.length > 0) {
+			this._destroySlide(0);
+		}
+	},
+
     _findSlideIndex: function(n) {
         var _n = n;
 		if (typeof n == 'string' || n instanceof String) {
@@ -178,6 +184,17 @@ TL.StorySlider = TL.Class.extend({
 	// Destroy slide by id
 	destroySlideId: function(id) {
 	    this.destroySlide(this._findSlideIndex(id));
+	},
+
+	// Destroy all slides
+	destroySlides: function() {
+		this._destroySlides();
+	},
+
+	destroy: function() {
+		this.destroySlides();
+		this._destroyEvents();
+		this._destroyLayout();
 	},
 
 	/*	Navigation
@@ -463,6 +480,25 @@ TL.StorySlider = TL.Class.extend({
 
 	},
 
+	_destroyLayout: function () {
+		this._nav.previous.destroy();
+		this._nav.next.destroy();
+
+		if (this._message) {
+			this._message.destroy();
+		}
+		if (this.animator) {
+			this.animator.stop();
+		}
+		if (this.preloadTimer) {
+			clearTimeout(this.preloadTimer);
+		}
+		if (this._swipable) {
+			this._swipable.stopMomentum();
+			this._swipable.disable();
+		}
+	},
+
 	_initEvents: function () {
 		this._nav.next.on('clicked', this._onNavigation, this);
 		this._nav.previous.on('clicked', this._onNavigation, this);
@@ -476,8 +512,22 @@ TL.StorySlider = TL.Class.extend({
 			this._swipable.on('swipe_right', this._onNavigation, this);
 			this._swipable.on('swipe_nodirection', this._onSwipeNoDirection, this);
 		}
+	},
 
 
+	_destroyEvents: function () {
+		this._nav.next.off('clicked', this._onNavigation);
+		this._nav.previous.off('clicked', this._onNavigation);
+
+		if (this._message) {
+			this._message.off('clicked', this._onMessageClick);
+		}
+
+		if (this._swipable) {
+			this._swipable.off('swipe_left', this._onNavigation);
+			this._swipable.off('swipe_right', this._onNavigation);
+			this._swipable.off('swipe_nodirection', this._onSwipeNoDirection);
+		}
 	},
 
 	_initData: function() {

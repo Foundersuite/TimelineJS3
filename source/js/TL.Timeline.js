@@ -211,9 +211,11 @@ TL.Timeline = TL.Class.extend({
 		}
 		TL.Util.mergeData(this.options, options);
 
-		window.addEventListener("resize", function(e){
+		this._onWindowResize = function (e) {
 			self.updateDisplay();
-		});
+		}
+
+		window.addEventListener("resize", this._onWindowResize);
 
 		// Set Debug Mode
 		TL.debug = this.options.debug;
@@ -245,6 +247,22 @@ TL.Timeline = TL.Class.extend({
 		}
 
 	},
+
+	destroy: function() {
+		window.removeEventListener("resize", this._onWindowResize);
+		this.ready = false;
+		if (this.message) {
+			this.message.destroy();
+		}
+		this._destroyEvents();
+		this._destroyLayout();
+		TL.Dom.remove(this._el.storyslider);
+		TL.Dom.remove(this._el.timenav);
+		TL.Dom.remove(this._el.menubar);
+		TL.DomUtil.removeClass(this._el.container, 'tl-timeline');
+		TL.DomUtil.removeClass(this._el.container, 'tl-layout-landscape');
+	},
+
 	_translateError: function(e) {
 	    if(e.hasOwnProperty('stack')) {
 	        trace(e.stack);
@@ -705,10 +723,26 @@ TL.Timeline = TL.Class.extend({
 			this.options.storyslider_height = (this.options.height - 1);
 		}
 
-
 		// Update Display
 		this._updateDisplay(this._timenav.options.height, true, 2000);
 
+	},
+
+	_destroyLayout: function () {
+
+		if (this.animator_menubar) {
+			this.animator_menubar.stop();
+		}
+		if (this.animator_storyslider) {
+			this.animator_storyslider.stop();
+		}
+		if (this.animator_timenav) {
+			this.animator_timenav.stop();
+		}
+
+		this._menubar.destroy();
+		this._storyslider.destroy();
+		this._timenav.destroy();
 	},
 
   /* Depends upon _initLayout because these events are on things the layout initializes */
@@ -730,25 +764,25 @@ TL.Timeline = TL.Class.extend({
 
 	},
 
-	/* Analytics
-	================================================== */
-	_initGoogleAnalytics: function() {
-		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	_destroyEvents: function () {
+		// TimeNav Events
+		this._timenav.off('loaded', this._onTimeNavLoaded);
+		this._timenav.off('update_timenav_min', this._updateTimeNavHeightMin);
+		this._timenav.off('change', this._onTimeNavChange);
+		this._timenav.off('zoomtoggle', this._onZoomToggle);
 
-		ga('create', this.options.ga_property_id, 'auto');
-	},
+		// StorySlider Events
+		this._storyslider.off('loaded', this._onStorySliderLoaded);
+		this._storyslider.off('change', this._onSlideChange);
+		this._storyslider.off('colorchange', this._onColorChange);
+		this._storyslider.off('nav_next', this._onStorySliderNext);
+		this._storyslider.off('nav_previous', this._onStorySliderPrevious);
 
-	_initAnalytics: function() {
-		if (this.options.ga_property_id === null) { return; }
-		this._initGoogleAnalytics();
-        ga('send', 'pageview');
-		var events = this.options.track_events;
-		for (i=0; i < events.length; i++) {
-			var event_ = events[i];
-			this.addEventListener(event_, function(e) {
-				ga('send', 'event', e.type, 'clicked');
-			});
-		}
+		// Menubar Events
+		this._menubar.off('zoom_in', this._onZoomIn);
+		this._menubar.off('zoom_out', this._onZoomOut);
+		this._menubar.off('back_to_start', this._onBackToStart);
+
 	},
 
 	_onZoomToggle: function(e) {
@@ -792,7 +826,6 @@ TL.Timeline = TL.Class.extend({
 		this.fire("dataloaded");
 		this._initLayout();
 		this._initEvents();
-		this._initAnalytics();
 		if (this.message) {
 			this.message.hide();
 		}
